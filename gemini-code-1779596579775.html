@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>龍與貓的浮空島 - 無限背包版</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Zpix&family=Press+Start+2P&display=swap');
+        
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            image-rendering: pixelated;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #2c3e50;
+            font-family: 'Zpix', 'Courier New', Courier, monospace;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 1150px; 
+            height: 580px;
+            background: #2d3748;
+            border: 6px solid #2d3748;
+            border-radius: 8px;
+            display: flex; 
+            box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+            overflow: hidden;
+            position: relative;
+        }
+
+        #game-main-screen {
+            flex-grow: 1; 
+            height: 100%;
+            background: linear-gradient(to bottom, #4a90e2 0%, #63b3ed 60%, #90cdf4 100%);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease-in-out; 
+        }
+
+        #side-function-panel {
+            width: 320px; 
+            height: 100%;
+            background-color: #232d3f;
+            border-left: 4px solid #2d3748;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease-in-out; 
+            position: relative;
+            z-index: 50;
+        }
+
+        #side-function-panel.minimized {
+            width: 60px;
+        }
+
+        .panel-header {
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1a202c;
+            border-bottom: 2px solid #2d3748;
+            transition: all 0.3s ease-in-out;
+        }
+        .panel-header h3 {
+            margin: 0;
+            font-size: 15px;
+            color: #fbd38d;
+            transition: opacity 0.2s;
+        }
+        
+        .toggle-panel-btn {
+            background: #4a5568;
+            color: white;
+            border: 2px solid #1a202c;
+            padding: 2px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-family: 'Zpix', sans-serif;
+            font-size: 11px;
+            transition: all 0.3s ease-in-out;
+            white-space: nowrap;
+        }
+        .toggle-panel-btn:hover { background: #718096; }
+
+        #side-function-panel.minimized .panel-header {
+            justify-content: center; 
+            padding: 12px 4px;
+        }
+        #side-function-panel.minimized .toggle-panel-btn {
+            padding: 4px 4px;
+            font-size: 10px;
+        }
+        #side-function-panel.minimized .toggle-panel-btn .btn-text {
+            font-size: 0; 
+        }
+        #side-function-panel.minimized .toggle-panel-btn .btn-text::after {
+            content: "▶◀ 展開"; 
+            font-size: 10px;
+        }
+
+        .panel-inner-content {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1;
+            overflow-y: auto;
+            transition: opacity 0.15s ease-in-out;
+        }
+
+        #side-function-panel.minimized .panel-inner-content,
+        #side-function-panel.minimized .panel-header h3 {
+            opacity: 0;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        #top-bar {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 10;
+        }
+
+        .pet-status-card {
+            background: rgba(45, 55, 72, 0.85);
+            border: 3px solid #4a5568;
+            border-radius: 4px;
+            padding: 8px 12px;
+            width: 210px;
+        }
+
+        .pet-name {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #fbd38d;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stat-row {
+            margin: 4px 0;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+        }
+
+        .stat-label { width: 50px; }
+
+        .bar-container {
+            flex-grow: 1;
+            height: 10px;
+            background: #1a202c;
+            border: 1px solid #718096;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            width: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .bar-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-size: 9px;
+            color: #fff;
+            line-height: 8px;
+            font-weight: bold;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .fill-fullness { background-color: #48bb78; }
+        .fill-happiness { background-color: #ed64a6; }
+        .fill-clean { background-color: #4299e1; }
+
+        #bond-panel {
+            background: rgba(226, 116, 151, 0.9);
+            border: 3px solid #b83280;
+            border-radius: 4px;
+            padding: 6px 12px;
+            text-align: center;
+            width: 180px;
+        }
+
+        #bond-level {
+            font-size: 14px;
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        #island-scene {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+
+        #main-island {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%; 
+            height: 280px;
+            background: #48bb78;
+            border-top: 8px solid #68d391;
+            border-radius: 150px / 40px;
+            box-shadow: inset 0 -15px 0 #38a169, 0 20px 0 #2f855a;
+        }
+
+        #portal {
+            position: absolute;
+            bottom: 120px;
+            right: 40px;
+            width: 70px;
+            height: 110px;
+            background: rgba(102, 126, 234, 0.3);
+            border: 5px dashed #667eea;
+            border-radius: 50% / 40%;
+            box-shadow: 0 0 15px #764ba2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            animation: pulse 1.5s infinite alternate;
+            z-index: 2;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.05); opacity: 1; }
+        }
+
+        .pet-entity { 
+            position: absolute; 
+            transition: left 2.5s linear, bottom 2.5s linear, transform 0.2s ease; 
+        }
+
+        #dragon-sprite {
+            bottom: 70px; left: 150px; width: 150px; height: 110px;
+            background: #4a5568; border: 4px solid #1a202c; border-radius: 35px 50px 20px 20px;
+            box-shadow: inset -8px -8px 0 #2d3748; z-index: 3;
+        }
+        #dragon-sprite::before {
+            content: ''; position: absolute; top: -12px; left: 20px;
+            width: 12px; height: 16px; background: #fbd38d;
+            border: 2px solid #1a202c; border-radius: 3px; transform: rotate(-15deg);
+        }
+        .dragon-tail {
+            position: absolute; right: -25px; bottom: 10px;
+            width: 40px; height: 20px; background: #4a5568;
+            border: 4px solid #1a202c; border-radius: 8px 15px 15px 8px;
+            transform-origin: left center; animation: tailWag 1.5s infinite alternate;
+        }
+        @keyframes tailWag { 0% { transform: rotate(-8deg); } 100% { transform: rotate(12deg); } }
+        .dragon-eye {
+            position: absolute; top: 22px; left: 25px; width: 12px; height: 12px;
+            background: #fff; border: 2px solid #1a202c; border-radius: 50%;
+        }
+        .dragon-eye::after { content: ''; position: absolute; top: 2px; left: 2px; width: 4px; height: 4px; background: #2b6cb0; border-radius: 50%; }
+
+        .dragon-armor-visual {
+            position: absolute; top: 30px; left: 45px; width: 70px; height: 45px;
+            border: 3px solid #ffd700; background: #ecc94b; border-radius: 10px;
+            box-shadow: inset -3px -3px 0 #d69e2e; display: none; opacity: 0.85;
+        }
+        .dragon-weapon-visual {
+            position: absolute; top: -18px; left: 55px; width: 12px; height: 22px;
+            background: #e53e3e; border: 2px solid #1a202c; clip-path: polygon(50% 0%, 100% 100%, 0% 100%); display: none;
+        }
+
+        #cat-sprite {
+            bottom: 110px; left: 350px; width: 42px; height: 38px;
+            background: #ed8936; border: 3px solid #1a202c; border-radius: 10px 10px 5px 5px;
+            box-shadow: inset -4px -4px 0 #dd6b20; z-index: 4;
+        }
+        #cat-sprite::before, #cat-sprite::after {
+            content: ''; position: absolute; top: -7px; width: 0; height: 0;
+            border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 7px solid #ed8936;
+        }
+        #cat-sprite::before { left: 4px; } #cat-sprite::after { right: 4px; }
+        .cat-eye { position: absolute; top: 10px; left: 8px; width: 5px; height: 5px; background: #000; border-radius: 50%; box-shadow: 15px 0 0 #000; }
+        .cat-crown {
+            position: absolute; top: -11px; left: 13px; width: 11px; height: 6px; background: #ecc94b;
+            clip-path: polygon(0% 100%, 0% 0%, 25% 60%, 50% 0%, 75% 60%, 100% 0%, 100% 100%);
+        }
+        
+        .cat-weapon-visual {
+            position: absolute; bottom: 2px; left: -5px; width: 12px; height: 12px;
+            background: #e53e3e; border: 1px solid #000; border-radius: 50%; display: none;
+            box-shadow: 34px 0 0 #e53e3e;
+        }
+        .cat-armor-visual {
+            position: absolute; top: 14px; left: 6px; width: 25px; height: 14px;
+            border: 2px solid #4a5568; background: #718096; border-radius: 4px; display: none;
+        }
+
+        .face-left { transform: scaleX(-1); }
+        .face-right { transform: scaleX(1); }
+
+        .bubble {
+            position: absolute; background: white; color: #1a202c; padding: 4px 8px;
+            border-radius: 6px; font-size: 11px; border: 2px solid #1a202c; opacity: 0;
+            transition: opacity 0.3s ease, top 0.3s, left 0.3s; pointer-events: none; z-index: 100; white-space: nowrap;
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+        }
+        .bubble::after {
+            content: ''; position: absolute; bottom: -8px; left: 15px;
+            border-width: 8px 8px 0; border-style: solid; border-color: white transparent;
+        }
+
+        .btn-group { display: flex; flex-direction: column; gap: 4px; background: rgba(26, 32, 44, 0.5); padding: 6px; border-radius: 4px; width: 100%; }
+        .group-title { font-size: 12px; color: #a0aec0; text-align: center; margin-bottom: 2px; font-weight: bold;}
+        
+        button {
+            background: #4a5568; color: white; border: 2px solid #1a202c; border-radius: 4px;
+            padding: 6px 12px; font-family: 'Zpix', sans-serif; font-size: 12px; cursor: pointer;
+            box-shadow: inset -2px -2px 0 #2d3748; transition: transform 0.1s;
+            text-align: left;
+        }
+        button:hover { background: #718096; }
+        button:active { transform: translate(1px, 1px); box-shadow: none; }
+        
+        #log-screen { width: 100%; background: #1a202c; border: 2px solid #4a5568; border-radius: 4px; padding: 6px; font-size: 11px; height: 80px; overflow-y: auto; }
+        .log-entry { margin-bottom: 3px; color: #68d391; }
+        .log-alert { color: #fc8181; }
+
+        #adventure-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, #1a202c 0%, #2d3748 100%);
+            z-index: 200; display: none; flex-direction: column;
+        }
+
+        #battle-header { display: flex; justify-content: space-between; padding: 15px; width: 100%; z-index: 210; }
+        .battle-hp-card { background: rgba(0,0,0,0.7); border: 2px solid #cbd5e0; padding: 8px 15px; border-radius: 4px; width: 220px; }
+        .hp-bar-outer { width: 100%; height: 14px; background: #1a202c; border: 1px solid #fff; margin-top: 5px; }
+        .hp-bar-inner { height: 100%; width: 100%; transition: width 0.1s; }
+
+        #battle-stage {
+            flex-grow: 1; width: 100%; position: relative;
+            background: linear-gradient(to bottom, #2c5282 0%, #2b6cb0 70%, #2f855a 71%, #276749 100%);
+            overflow: hidden; transition: background 0.5s ease;
+        }
+
+        #battle-team { position: absolute; bottom: 40px; left: 80px; width: 200px; height: 150px; transition: all 0.1s; }
+        #battle-dragon {
+            position: absolute; bottom: 0; left: 0; width: 120px; height: 90px;
+            background: #4a5568; border: 3px solid #1a202c; border-radius: 30px 40px 10px 10px;
+        }
+        #battle-cat {
+            position: absolute; bottom: 85px; left: 30px; width: 35px; height: 30px;
+            background: #ed8936; border: 2px solid #1a202c; border-radius: 8px 8px 4px 4px; transition: all 0.1s;
+        }
+        #battle-cat::before {
+            content: ''; position: absolute; top: -10px; left: 10px; width: 10px; height: 6px; background: #ecc94b;
+            clip-path: polygon(0% 100%, 0% 0%, 50% 60%, 100% 0%, 100% 100%);
+        }
+
+        #battle-enemy {
+            position: absolute; bottom: 40px; right: 100px; width: 90px; height: 80px;
+            background: #9f7aea; border: 4px solid #1a202c; border-radius: 50% 50% 30% 30%;
+            animation: slimeBounce 0.4s infinite alternate; transition: all 0.1s;
+        }
+        @keyframes slimeBounce { 0% { transform: scaleY(1); } 100% { transform: scaleY(0.85) translateY(10px); } }
+        .enemy-eye { position: absolute; top: 30px; left: 20px; width: 8px; height: 8px; background: #e53e3e; border-radius: 50%; box-shadow: 25px 0 0 #e53e3e; }
+
+        #effect-fire {
+            position: absolute; bottom: 70px; left: 190px; width: 0px; height: 35px;
+            background: linear-gradient(to right, #ecc94b, #f6e05e, #e53e3e);
+            border-radius: 0 20px 20px 0; opacity: 0; transition: width 0.05s ease; z-index: 10;
+        }
+        #effect-claw {
+            position: absolute; bottom: 80px; right: 160px; width: 60px; height: 60px;
+            border-left: 5px solid #fff; border-right: 5px solid #fff; opacity: 0;
+            transform: rotate(35deg); transition: opacity 0.05s; z-index: 11;
+        }
+
+        #battle-footer { height: 140px; background: #1a202c; border-top: 4px solid #4a5568; display: flex; padding: 10px; gap: 15px; }
+        #battle-log { flex-grow: 1; background: #2d3748; border: 2px solid #4a5568; border-radius: 4px; padding: 8px; font-size: 13px; overflow-y: auto; color: #e2e8f0; line-height: 1.5; }
+        #battle-actions { width: 260px; display: flex; flex-direction: column; gap: 6px; justify-content: center; }
+        .btn-attack { background: #e53e3e; font-weight: bold; font-size: 14px; border-color: #742a2a; text-align: center; }
+        .btn-attack:hover { background: #c53030; }
+        .btn-attack:disabled { background: #718096; cursor: not-allowed; }
+
+        .control-box {
+            background: #232d3f;
+            border: 2px solid #4a5568;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #fff;
+        }
+        .control-box input {
+            cursor: pointer;
+            width: 14px;
+            height: 14px;
+        }
+        .highlight-loop { border-color: #ed8936; color: #fbd38d; font-weight: bold; }
+
+        #shop-screen, #quest-select-screen {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 450px; background: #2d3748; border: 4px solid #ed8936; border-radius: 6px;
+            padding: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 300; display: none;
+        }
+        #quest-select-screen { border-color: #667eea; }
+        .shop-header, .quest-header { display: flex; justify-content: space-between; margin-bottom: 12px; font-weight: bold; border-bottom: 2px dashed #ed8936; padding-bottom: 6px;}
+        .quest-header { border-bottom-color: #667eea; }
+        .shop-item-row, .quest-item-row { display: flex; justify-content: space-between; align-items: center; background: #1a202c; margin-bottom: 6px; padding: 8px 12px; border-radius: 4px; font-size: 12px;}
+        
+        .shop-buy-btn, .quest-go-btn { background: #ed8936; font-size: 11px; padding: 4px 10px; box-shadow: none; border-color:#dd6b20; text-align: center; width: auto;}
+        .shop-buy-btn:hover { background: #f6e05e; color: #000; }
+        .quest-go-btn { background: #48bb78; border-color: #2f855a; }
+        .quest-go-btn:hover { background: #38a169; }
+
+        .equip-grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: rgba(26, 32, 44, 0.4); padding: 6px; border-radius: 4px; }
+        .equip-slot { background: #1a202c; border: 2px solid #4a5568; border-radius: 4px; padding: 6px 4px; font-size: 10px; text-align: center; line-height: 1.3; }
+        
+        .batch-smelt-box {
+            background: #111622;
+            border: 2px solid #ed8936;
+            border-radius: 4px;
+            padding: 6px;
+            margin-bottom: 2px;
+            font-size: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .batch-filters {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .batch-filters label {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            cursor: pointer;
+        }
+        .lbl-royal { color: #f6e05e; font-weight: bold; text-shadow: 0 0 1px #d69e2e; }
+
+        .btn-batch-smelt {
+            background: #ed8936;
+            border-color: #dd6b20;
+            color: #fff;
+            text-align: center;
+            font-size: 11px;
+            padding: 4px;
+            font-weight: bold;
+            border-radius: 3px;
+            width: 100%;
+        }
+        .btn-batch-smelt:hover { background: #f6ad55; }
+
+        .bag-scroll-wrapper {
+            max-height: 140px; 
+            overflow-y: auto; 
+            background: rgba(20, 26, 38, 0.6); 
+            padding: 6px; 
+            border-radius: 4px;
+            border: 1px solid #2d3748;
+        }
+        .bag-grid-container { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 6px; 
+        }
+        .bag-slot { 
+            height: 50px; 
+            background: #111622; 
+            border: 2px solid #4a5568; 
+            border-radius: 4px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            font-size: 10px; 
+            cursor: pointer; 
+            text-align: center; 
+            overflow: hidden; 
+            padding: 2px; 
+            position: relative;
+        }
+        .bag-slot:hover { border-color: #cbd5e0; background: #1a202c; }
+
+        .rarity-普通 { border-color: #cbd5e0; color: #fff; }
+        .rarity-良好 { border-color: #4299e1; color: #63b3ed; font-weight: bold; }
+        .rarity-精緻 { border-color: #9f7aea; color: #b794f4; font-weight: bold; }
+        .rarity-高級 { border-color: #ed8936; color: #f6ad55; font-weight: bold; }
+        .rarity-皇家 { border-color: #d69e2e; color: #f6e05e; font-weight: bold; text-shadow: 0 0 2px #ecc94b; animation: royalGlow 1s infinite alternate; }
+        .rarity-道具 { border-color: #48bb78; color: #68d391; font-weight: bold; }
+        @keyframes royalGlow { 0% { box-shadow: inset 0 0 2px #d69e2e; } 100% { box-shadow: inset 0 0 8px #f6e05e; } }
+
+        #item-modal {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 290px; background: #1a202c; border: 3px solid #718096; border-radius: 6px;
+            padding: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.8); z-index: 400; display: none; text-align: center;
+        }
+        .modal-buttons { display: flex; gap: 8px; justify-content: center; margin-top: 10px; }
+        .modal-btn { padding: 4px 12px; font-size: 12px; text-align: center; }
+
+        #potion-counters {
+            display: flex;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        .potion-badge {
+            background: #1a202c; border: 1px solid #4a5568; border-radius: 3px;
+            padding: 1px 4px; font-size: 10px; color: #cbd5e0;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    
+    <div id="game-main-screen">
+        
+        <div id="top-bar">
+            <div class="pet-status-card">
+                <div class="pet-name">🐱 貓咪 Momo <span style="font-size:10px; color:#a0aec0;">老大</span></div>
+                <div class="stat-row">
+                    <span class="stat-label">飽食度</span>
+                    <div class="bar-container"><div id="cat-full" class="bar-fill fill-fullness" style="width: 80%;"></div><div id="cat-full-txt" class="bar-text">80/100</div></div>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">心情值</span>
+                    <div class="bar-container"><div id="cat-happy" class="bar-fill fill-happiness" style="width: 90%;"></div><div id="cat-happy-txt" class="bar-text">90/100</div></div>
+                </div>
+            </div>
+
+            <div id="bond-panel">
+                <div style="font-size:11px;">💖 龍貓親密羈絆</div>
+                <div id="bond-level">LV.1 歡喜冤家</div>
+                <div class="bar-container" style="height:6px; margin-top:4px;">
+                    <div id="bond-fill" class="bar-fill" style="background:#b83280; width:10%;"></div>
+                </div>
+                <div style="font-size:11px; margin-top:4px; color:#ffd700;">🪙 金幣: <span id="gold-display">150</span></div>
+            </div>
+
+            <div class="pet-status-card">
+                <div class="pet-name">🐲 大龍 Barnaby <span style="font-size:10px; color:#a0aec0;">馱獸</span></div>
+                <div class="stat-row">
+                    <span class="stat-label">飽食度</span>
+                    <div class="bar-container"><div id="dragon-full" class="bar-fill fill-fullness" style="width: 70%;"></div><div id="dragon-full-txt" class="bar-text">70/100</div></div>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">清潔度</span>
+                    <div class="bar-container"><div id="dragon-clean" class="bar-fill fill-clean" style="width: 85%;"></div><div id="dragon-clean-txt" class="bar-text">85/100</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="island-scene">
+            <div id="main-island">
+                <div id="portal" onclick="openQuestSelect()">
+                    <div style="font-size:13px; text-align:center; font-weight:bold; text-shadow:1px 1px 0 #000;">傳送<br>出擊</div>
+                </div>
+                
+                <div id="dragon-sprite" class="pet-entity face-right">
+                    <div class="dragon-eye"></div>
+                    <div class="dragon-tail"></div>
+                    <div id="visual-dragon-weapon" class="dragon-weapon-visual"></div>
+                    <div id="visual-dragon-armor" class="dragon-armor-visual"></div>
+                </div>
+                
+                <div id="cat-sprite" class="pet-entity face-right">
+                    <div class="cat-crown"></div>
+                    <div class="cat-eye"></div>
+                    <div id="visual-cat-weapon" class="cat-weapon-visual"></div>
+                    <div id="visual-cat-armor" class="cat-armor-visual"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="dragon-bubble" class="bubble"></div>
+        <div id="cat-bubble" class="bubble"></div>
+
+        <div id="quest-select-screen">
+            <div class="quest-header">
+                <span>🗺️ 選擇探索秘境</span>
+                <span style="color:#fc8181; cursor:pointer;" onclick="closeQuestSelect()">[X]</span>
+            </div>
+            <div id="quest-list-container" style="max-height: 380px; overflow-y: auto; padding-right: 4px;"></div>
+        </div>
+
+        <div id="adventure-screen">
+            <div id="battle-header">
+                <div class="battle-hp-card">
+                    <div style="font-size:14px; color:#fbd38d; display:flex; justify-content:space-between;">
+                        <span>💪 龍貓聯軍</span>
+                        <span id="battle-buff-info" style="font-size:10px; color:#68d391;"></span>
+                    </div>
+                    <div class="hp-bar-outer"><div id="player-hp" class="hp-bar-inner" style="background:#48bb78; width: 100%;"></div></div>
+                    <div id="player-hp-txt" style="font-size:11px; text-align:right; margin-top:2px;">100 / 100</div>
+                    
+                    <div id="potion-counters">
+                        <div id="cnt-small-pot" class="potion-badge">💊 小傷藥: 0</div>
+                        <div id="cnt-large-pot" class="potion-badge">🧪 大傷藥: 0</div>
+                    </div>
+                </div>
+                <div id="adventure-title-text" style="font-size:18px; font-weight:bold; color:#ecc94b; text-shadow:2px 2px 0 #000; align-self:center; text-align:center;">秘境探索</div>
+                <div class="battle-hp-card">
+                    <div id="enemy-name" style="font-size:14px; color:#fc8181;">野生怪物</div>
+                    <div class="hp-bar-outer"><div id="enemy-hp" class="hp-bar-inner" style="background:#e53e3e; width: 100%;"></div></div>
+                    <div id="enemy-hp-txt" style="font-size:11px; text-align:right; margin-top:2px;">150 / 150</div>
+                </div>
+            </div>
+
+            <div id="battle-stage">
+                <div id="battle-team">
+                    <div id="battle-dragon">
+                        <div class="dragon-eye" style="top:15px; left:20px;"></div>
+                        <div id="b-visual-dragon-weapon" class="dragon-weapon-visual"></div>
+                        <div id="b-visual-dragon-armor" class="dragon-armor-visual" style="top:25px; left:30px; width:60px; height:40px;"></div>
+                    </div>
+                    <div id="battle-cat">
+                        <div id="b-visual-cat-weapon" class="cat-weapon-visual"></div>
+                        <div id="b-visual-cat-armor" class="cat-armor-visual" style="top:10px; left:4px;"></div>
+                    </div>
+                </div>
+                <div id="effect-fire"></div>
+                <div id="effect-claw"></div>
+                <div id="battle-enemy"><div class="enemy-eye"></div></div>
+            </div>
+
+            <div id="battle-footer">
+                <div id="battle-log"></div>
+                <div id="battle-actions">
+                    <div class="control-box">
+                        <label><input type="checkbox" id="chk-fast-defense" checked> ⚡ 自動戰鬥</label>
+                    </div>
+                    <div class="control-box highlight-loop">
+                        <label><input type="checkbox" id="chk-auto-loop" checked> 🔄 自動下一場 (取消即自動回島)</label>
+                    </div>
+                    <button id="btn-combo" class="btn-attack" onclick="playerAttackCombo()">🔥 噴火貓爪連擊！</button>
+                    <button id="btn-escape" style="background:#4a5568; text-align:center;" onclick="exitBattle(false)">🏳️ 撤退回島</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="shop-screen">
+            <div class="shop-header">
+                <span>🏪 浮空島神秘補給商店</span>
+                <span style="color:#ecc94b; cursor:pointer;" onclick="closeShop()">[X]</span>
+            </div>
+            <div id="shop-items-list" style="max-height:380px; overflow-y:auto;"></div>
+        </div>
+
+        <div id="item-modal">
+            <div id="modal-item-name" style="font-weight:bold; font-size:14px; margin-bottom:6px;">項目名稱</div>
+            <div id="modal-item-desc" style="font-size:11px; color:#e2e8f0; margin-bottom:12px; text-align:left; background:#111622; padding:8px; border-radius:4px; line-height:1.4;">詳細資訊</div>
+            <div class="modal-buttons" id="modal-action-buttons"></div>
+        </div>
+
+    </div>
+
+    <div id="side-function-panel">
+        <div class="panel-header">
+            <h3>控制面板</h3>
+            <button class="toggle-panel-btn" id="togglePanelBtn"><span class="btn-text">◀▶ 收折</span></button>
+        </div>
+        
+        <div class="panel-inner-content">
+            <div class="btn-group">
+                <div class="group-title">⚔️ 寵物當前裝備</div>
+                <div class="equip-grid-container">
+                    <div class="equip-slot rarity-普通" id="slot-cat-weapon">🐱武器: 拳頭</div>
+                    <div class="equip-slot rarity-普通" id="slot-cat-armor">🐱防具: 毛皮</div>
+                    <div class="equip-slot rarity-普通" id="slot-dragon-weapon">🐲武器: 吐息</div>
+                    <div class="equip-slot rarity-普通" id="slot-dragon-armor">🐲防具: 龍鱗</div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <div class="group-title" id="bag-count-title">🎒 戰利品與背包 (0 件)</div>
+                
+                <div class="batch-smelt-box">
+                    <div class="batch-filters">
+                        <label><input type="checkbox" id="chk-普通" checked> 普通</label>
+                        <label><input type="checkbox" id="chk-良好"> 良好</label>
+                        <label><input type="checkbox" id="chk-精緻"> 精緻</label>
+                        <label><input type="checkbox" id="chk-高級"> 高級</label>
+                        <label class="lbl-royal"><input type="checkbox" id="chk-皇家"> 👑皇家</label>
+                    </div>
+                    <button class="btn-batch-smelt" onclick="batchSmeltItems()">✨ 一鍵批量熔煉選中品級</button>
+                </div>
+
+                <div class="bag-scroll-wrapper">
+                    <div class="bag-grid-container" id="bag-container"></div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <div class="group-title">照顧寵物選項</div>
+                <div style="display:flex; gap:4px; margin-bottom:2px;">
+                    <button style="flex:1; padding:4px;" onclick="feedCat()">🥫 餵貓</button>
+                    <button style="flex:1; padding:4px;" onclick="playCat()">✨ 玩耍</button>
+                    <button style="flex:1; padding:4px;" onclick="feedDragon()">💎 餵龍</button>
+                    <button style="flex:1; padding:4px;" onclick="brushDragon()">🧹 刷洗</button>
+                </div>
+                <button style="background:#b83280; text-align:center; padding:4px;" onclick="triggerInteraction()">💕 觸發互動連動</button>
+            </div>
+
+            <div class="btn-group">
+                <button style="background:#ed8936; border-color:#dd6b20; text-align:center; padding:5px;" onclick="openShop()">🏪 開啟補給商店</button>
+            </div>
+            
+            <div class="group-title" style="text-align:left;">📜 歷史日誌</div>
+            <div id="log-screen"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ==================== 遊戲核心資料狀態 ====================
+let gameState = {
+    gold: 150,
+    bondLevel: 1,
+    bondExp: 10,
+    bondMaxExp: 100,
+    
+    // 寵物島嶼狀態
+    catFull: 80,
+    catHappy: 90,
+    dragonFull: 70,
+    dragonClean: 85,
+    
+    // 當前穿戴裝備 (null 表示初始預設)
+    equipped: {
+        cat_weapon: null,
+        cat_armor: null,
+        dragon_weapon: null,
+        dragon_armor: null
+    },
+    
+    // 背包 (無限容量陣列)
+    bag: [],
+    
+    // 藥水存量
+    potions: {
+        small: 2,
+        large: 1
+    }
+};
+
+// 戰鬥狀態暫存
+let battleState = {
+    active: false,
+    quest: null,
+    playerHp: 100,
+    playerMaxHp: 100,
+    enemyHp: 0,
+    enemyMaxHp: 0,
+    enemyName: "",
+    enemyAtk: 0,
+    enemyGold: 0,
+    autoTimer: null
+};
+
+// ==================== 設定與靜態資料 ====================
+const RARITIES = ['普通', '良好', '精緻', '高級', '皇家'];
+const EQUIP_TYPES = ['cat_weapon', 'cat_armor', 'dragon_weapon', 'dragon_armor'];
+
+const QUESTS = [
+    { id: 1, name: "微風浮雲層", hp: 60, atk: 5, gold: 30, level: 1 },
+    { id: 2, name: "積雨雲雷池", hp: 140, atk: 12, gold: 70, level: 5 },
+    { id: 3, name: "失落星河遺跡", hp: 300, atk: 24, gold: 150, level: 12 },
+    { id: 4, name: "極光終焉裂隙", hp: 650, atk: 45, gold: 320, level: 25 },
+    { id: 5, name: "混沌虛空暴風眼", hp: 1500, atk: 90, gold: 750, level: 50 }
+];
+
+const SHOP_ITEMS = [
+    { id: 'p_small', name: '💊 小傷藥 (戰鬥回25HP)', price: 15, type: 'potion', target: 'small' },
+    { id: 'p_large', name: '🧪 大傷藥 (戰鬥回60HP)', price: 35, type: 'potion', target: 'large' },
+    { id: 'box_normal', name: '📦 普通物資箱 (隨機普通~精緻)', price: 50, type: 'box', tier: 1 },
+    { id: 'box_royal', name: '👑 皇家軍備箱 (隨機精緻~皇家)', price: 200, type: 'box', tier: 2 }
+];
+
+// 隨機名字庫
+const ENEMY_PREFIX = ["暴躁的", "變異的", "虛空的", "閃耀的", "巨大的", "偽裝成雲朵的"];
+const ENEMY_SUFFIX = ["史萊姆", "浮空水母", "機械鳥", "星塵幽靈", "惡魔貓蟲", "貪吃巨鷹"];
+
+const EQUIP_NAMES = {
+    cat_weapon: ["木貓爪", "精鋼肉墊", "合金倒鉤爪", "貓薄荷聖劍", "影之誓約神爪"],
+    cat_armor: ["小肚兜", "時尚領圈", "反重力貓背心", "荊棘護體重甲", "九命貓仙御神袍"],
+    dragon_weapon: ["火苗星", "烈焰增幅器", "離子熔岩重炮", "巨龍湮滅怒吼", "滅世終焉龍息"],
+    dragon_armor: ["薄鐵皮", "岩石鞍墊", "鈦合金護胸甲", "古龍不滅逆鱗", "黑洞視界力場盾"]
+};
+
+// ==================== 初始化 ====================
+window.onload = function() {
+    setupPanelToggle();
+    updateUI();
+    addLog("🎮 歡迎來到龍與貓的浮空島！兩隻小傢伙正期待著冒險呢。");
+    
+    // 寵物隨機漫步與對話計時器
+    setInterval(petRandomWalk, 4000);
+    setInterval(petRandomChat, 7000);
+};
+
+// 控制面板收折邏輯
+function setupPanelToggle() {
+    const panel = document.getElementById('side-function-panel');
+    const btn = document.getElementById('togglePanelBtn');
+    btn.addEventListener('click', () => {
+        panel.classList.toggle('minimized');
+    });
+}
+
+// ==================== 核心 UI 刷新 ====================
+function updateUI() {
+    // 頂部與羈絆狀態
+    document.getElementById('gold-display').innerText = gameState.gold;
+    document.getElementById('bond-level').innerText = `LV.${gameState.bondLevel} ${getBondTitle(gameState.bondLevel)}`;
+    document.getElementById('bond-fill').style.width = `${(gameState.bondExp / gameState.bondMaxExp) * 100}%`;
+    
+    // 寵物養成狀態條
+    document.getElementById('cat-full').style.width = `${gameState.catFull}%`;
+    document.getElementById('cat-full-txt').innerText = `${gameState.catFull}/100`;
+    document.getElementById('cat-happy').style.width = `${gameState.catHappy}%`;
+    document.getElementById('cat-happy-txt').innerText = `${gameState.catHappy}/100`;
+    
+    document.getElementById('dragon-full').style.width = `${gameState.dragonFull}%`;
+    document.getElementById('dragon-full-txt').innerText = `${gameState.dragonFull}/100`;
+    document.getElementById('dragon-clean').style.width = `${gameState.dragonClean}%`;
+    document.getElementById('dragon-clean-txt').innerText = `${gameState.dragonClean}/100`;
+    
+    // 穿戴裝備面板更新
+    renderEquipSlot('cat_weapon', '🐱武器: ');
+    renderEquipSlot('cat_armor', '🐱防具: ');
+    renderEquipSlot('dragon_weapon', '🐲武器: ');
+    renderEquipSlot('dragon_armor', '🐲防具: ');
+    
+    // 背包更新
+    document.getElementById('bag-count-title').innerText = `🎒 戰利品與背包 (${gameState.bag.length} 件)`;
+    renderBag();
+    
+    // 戰鬥介面中藥水數量更新
+    document.getElementById('cnt-small-pot').innerText = `💊 小傷藥: ${gameState.potions.small}`;
+    document.getElementById('cnt-large-pot').innerText = `🧪 大傷藥: ${gameState.potions.large}`;
+    
+    // 地圖同步外觀顯示控制
+    document.getElementById('visual-cat-weapon').style.display = gameState.equipped.cat_weapon ? 'block' : 'none';
+    document.getElementById('visual-cat-armor').style.display = gameState.equipped.cat_armor ? 'block' : 'none';
+    document.getElementById('visual-dragon-weapon').style.display = gameState.equipped.dragon_weapon ? 'block' : 'none';
+    document.getElementById('visual-dragon-armor').style.display = gameState.equipped.dragon_armor ? 'block' : 'none';
+    
+    // 戰鬥同步外觀
+    document.getElementById('b-visual-cat-weapon').style.display = gameState.equipped.cat_weapon ? 'block' : 'none';
+    document.getElementById('b-visual-cat-armor').style.display = gameState.equipped.cat_armor ? 'block' : 'none';
+    document.getElementById('b-visual-dragon-weapon').style.display = gameState.equipped.dragon_weapon ? 'block' : 'none';
+    document.getElementById('b-visual-dragon-armor').style.display = gameState.equipped.dragon_armor ? 'block' : 'none';
+}
+
+function getBondTitle(lv) {
+    if(lv < 3) return "歡喜冤家";
+    if(lv < 6) return "默契初現";
+    if(lv < 10) return "生死相依";
+    return "超越神話的羈絆";
+}
+
+function renderEquipSlot(slotKey, prefix) {
+    const slotEl = document.getElementById(`slot-${slotKey.replace('_', '-')}`);
+    const item = gameState.equipped[slotKey];
+    
+    // 清除舊稀有度樣式
+    slotEl.className = "equip-slot";
+    if (item) {
+        slotEl.classList.add(`rarity-${item.rarity}`);
+        slotEl.innerText = `${item.name} (+${item.value})`;
+    } else {
+        slotEl.classList.add(`rarity-普通`);
+        slotEl.innerText = prefix + (slotKey.includes('weapon') ? '基礎攻擊' : '基礎防禦');
+    }
+}
+
+// ==================== 裝備隨機生成系統 ====================
+function generateRandomEquipment(tier = 0) {
+    let rarityIndex = 0;
+    const r = Math.random();
+    
+    if (tier === 1) {
+        rarityIndex = r < 0.5 ? 0 : (r < 0.85 ? 1 : 2); 
+    } else if (tier === 2) {
+        rarityIndex = r < 0.4 ? 2 : (r < 0.85 ? 3 : 4); 
+    } else {
+        rarityIndex = r < 0.55 ? 0 : (r < 0.82 ? 1 : (r < 0.95 ? 2 : (r < 0.99 ? 3 : 4)));
+    }
+    
+    const rarity = RARITIES[rarityIndex];
+    const type = EQUIP_TYPES[Math.floor(Math.random() * EQUIP_TYPES.length)];
+    
+    const baseMultiplier = (rarityIndex + 1) * 12;
+    const value = Math.floor(baseMultiplier + Math.random() * baseMultiplier);
+    
+    const namePool = EQUIP_NAMES[type];
+    const name = `[${rarity}] ${namePool[rarityIndex]}`;
+    
+    const smeltGold = (rarityIndex + 1) * 15 + Math.floor(Math.random() * 10);
+    
+    return {
+        id: 'eq_' + Math.random().toString(36).substr(2, 9),
+        name: name,
+        type: type,
+        rarity: rarity,
+        value: value,
+        smeltGold: smeltGold,
+        desc: `${type.includes('cat') ? '🐱貓咪':'🐲大龍'}專用${type.includes('weapon')?'武器':'防具'}。提供 +${value} 點${type.includes('weapon')?'戰鬥攻擊力':'戰鬥總生命值'}。`
+    };
+}
+
+// ==================== 背包渲染與模態視窗 ====================
+function renderBag() {
+    const container = document.getElementById('bag-container');
+    container.innerHTML = "";
+    
+    gameState.bag.forEach((item, index) => {
+        const slot = document.createElement('div');
+        slot.className = `bag-slot rarity-${item.rarity}`;
+        
+        let displayName = item.name.split('] ')[1] || item.name;
+        if(displayName.length > 5) displayName = displayName.substring(0,4) + '..';
+        
+        slot.innerHTML = `<div>${displayName}</div><div style="font-size:8px;opacity:0.8;">+${item.value || 0}</div>`;
+        slot.onclick = () => openItemModal(item, index);
+        container.appendChild(slot);
+    });
+}
+
+function openItemModal(item, index) {
+    const modal = document.getElementById('item-modal');
+    document.getElementById('modal-item-name').innerText = item.name;
+    document.getElementById('modal-item-name').className = `rarity-${item.rarity}`;
+    document.getElementById('modal-item-desc').innerText = `${item.desc}\n\n💰 熔煉可得：${item.smeltGold} 金幣`;
+    
+    const btnArea = document.getElementById('modal-action-buttons');
+    btnArea.innerHTML = "";
+    
+    const equipBtn = document.createElement('button');
+    equipBtn.className = "modal-btn";
+    equipBtn.style.background = "#48bb78";
+    equipBtn.innerText = "⚔️ 穿戴裝備";
+    equipBtn.onclick = () => {
+        equipItem(index);
+        closeModal();
+    };
+    
+    const smeltBtn = document.createElement('button');
+    smeltBtn.className = "modal-btn";
+    smeltBtn.style.background = "#ed8936";
+    smeltBtn.innerText = "✨ 熔煉";
+    smeltBtn.onclick = () => {
+        smeltSingleItem(index);
+        closeModal();
+    };
+    
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = "modal-btn";
+    cancelBtn.innerText = "關閉";
+    cancelBtn.onclick = closeModal;
+    
+    btnArea.appendChild(equipBtn);
+    btnArea.appendChild(smeltBtn);
+    btnArea.appendChild(cancelBtn);
+    
+    modal.style.display = "block";
+}
+
+function closeModal() {
+    document.getElementById('item-modal').style.display = "none";
+}
+
+function equipItem(index) {
+    const item = gameState.bag[index];
+    const slotType = item.type;
+    
+    const oldItem = gameState.equipped[slotType];
+    if (oldItem) {
+        gameState.bag.push(oldItem);
+    }
+    
+    gameState.equipped[slotType] = item;
+    gameState.bag.splice(index, 1);
+    
+    addLog(`⚔️ 成功裝備了 ${item.name}！戰力獲得提升。`);
+    updateUI();
+}
+
+function smeltSingleItem(index) {
+    const item = gameState.bag[index];
+    gameState.gold += item.smeltGold;
+    addLog(`✨ 熔煉了 ${item.name}，獲得了 💰 ${item.smeltGold} 金幣。`);
+    gameState.bag.splice(index, 1);
+    updateUI();
+}
+
+function batchSmeltItems() {
+    if (gameState.bag.length === 0) {
+        addLog("🎒 背包裡根本沒有東西可以熔煉哦！", true);
+        return;
+    }
+    
+    let totalGain = 0;
+    let count = 0;
+    
+    for (let i = gameState.bag.length - 1; i >= 0; i--) {
+        const rarity = gameState.bag[i].rarity;
+        const isChecked = document.getElementById(`chk-${rarity}`).checked;
+        
+        if (isChecked) {
+            totalGain += gameState.bag[i].smeltGold;
+            gameState.bag.splice(i, 1);
+            count++;
+        }
+    }
+    
+    if (count > 0) {
+        gameState.gold += totalGain;
+        addLog(`🧹 一鍵熔煉開啟！共分解了 ${count} 件裝備，換回 💰 ${totalGain} 金幣！`);
+        updateUI();
+    } else {
+        addLog("⚠️ 沒有任何符合勾選品級的裝備被熔煉。", true);
+    }
+}
+
+// ==================== 寵物互動與動態效果 ====================
+function petRandomWalk() {
+    if (battleState.active) return;
+    
+    const cat = document.getElementById('cat-sprite');
+    const dragon = document.getElementById('dragon-sprite');
+    
+    const randomX1 = Math.floor(40 + Math.random() * 450);
+    const randomY1 = Math.floor(60 + Math.random() * 100);
+    const randomX2 = Math.floor(40 + Math.random() * 450);
+    const randomY2 = Math.floor(60 + Math.random() * 100);
+    
+    setEntityDirection(cat, randomX1);
+    setEntityDirection(dragon, randomX2);
+    
+    cat.style.left = `${randomX1}px`;
+    cat.style.bottom = `${randomY1}px`;
+    
+    dragon.style.left = `${randomX2}px`;
+    dragon.style.bottom = `${randomY2}px`;
+}
+
+function setEntityDirection(el, newX) {
+    const currentX = parseInt(el.style.left) || 0;
+    if (newX > currentX) {
+        el.classList.remove('face-left');
+        el.classList.add('face-right');
+    } else if (newX < currentX) {
+        el.classList.remove('face-right');
+        el.classList.add('face-left');
+    }
+}
+
+function petRandomChat() {
+    if (battleState.active || Math.random() > 0.6) return;
+    
+    const catQuotes = ["愚蠢的巨龍，今天也要幫本喵扛包包！", "哈啊...好想吃天界罐罐...", "別踩到我的尾巴，Barnaby！", "今天天氣真適合在浮空島邊緣睡午覺~"];
+    const dragonQuotes = ["Momo老大別催了，翅膀要斷了啦...", "金幣...閃閃發光的金幣...", "呼...剛才噴火把雲烤焦了...", "待會能幫我刷刷背上的鱗片嗎？"];
+    
+    showBubble('cat-bubble', 'cat-sprite', catQuotes[Math.floor(Math.random() * catQuotes.length)]);
+    setTimeout(() => {
+        showBubble('dragon-bubble', 'dragon-sprite', dragonQuotes[Math.floor(Math.random() * dragonQuotes.length)]);
+    }, 1500);
+}
+
+function showBubble(bubbleId, spriteId, text) {
+    const bubble = document.getElementById(bubbleId);
+    const sprite = document.getElementById(spriteId);
+    
+    bubble.innerText = text;
+    bubble.style.left = `${parseInt(sprite.style.left) + 10}px`;
+    bubble.style.top = `${460 - parseInt(sprite.style.bottom)}px`; 
+    bubble.style.opacity = 1;
+    
+    setTimeout(() => { bubble.style.opacity = 0; }, 3000);
+}
+
+function feedCat() {
+    if (gameState.catFull >= 100) { addLog("🐱 Momo 肚子太撐了，傲嬌地推開了罐罐。"); return; }
+    gameState.catFull = Math.min(100, gameState.catFull + 20);
+    gainBond(5);
+    addLog("🥫 餵食了 Momo 優質貓罐頭！飽食度大增。");
+    updateUI();
+}
+
+function playCat() {
+    gameState.catHappy = Math.min(100, gameState.catHappy + 15);
+    gainBond(5);
+    addLog("✨ 用逗貓棒跟 Momo 玩耍，牠瘋狂撲擊顯得很開心！");
+    updateUI();
+}
+
+function feedDragon() {
+    if (gameState.dragonFull >= 100) { addLog("🐲 Barnaby 打了個飽嗝，噴出一點火星，吃不下了。"); return; }
+    gameState.dragonFull = Math.min(100, gameState.dragonFull + 25);
+    gainBond(6);
+    addLog("💎 給大龍 Barnaby 餵食了高能硫磺礦石，牠咬得嘎嘣脆！");
+    updateUI();
+}
+
+function brushDragon() {
+    gameState.dragonClean = Math.min(100, gameState.dragonClean + 20);
+    gainBond(6);
+    addLog("🧹 拿起大刷子幫 Barnaby 刷洗翅膀與腹部，陳年煙垢都被洗掉了。");
+    updateUI();
+}
+
+function triggerInteraction() {
+    showBubble('cat-bubble', 'cat-sprite', "喂！肥龍，聯動出擊了！別發呆！");
+    setTimeout(() => {
+        showBubble('dragon-bubble', 'dragon-sprite', "好嘞老大！我的全能胃袋背包早就準備好裝寶物了！");
+        gainBond(15);
+        if (Math.random() > 0.5) {
+            gameState.gold += 20;
+            addLog("💕 龍貓展現了絕妙默契！在島根底下挖到了額外的 💰 20 金幣。");
+        } else {
+            addLog("💕 友情值滿載！龍貓組合感到身心舒暢，羈絆經驗大幅提升。");
+        }
+        updateUI();
+    }, 1200);
+}
+
+function gainBond(amount) {
+    gameState.bondExp += amount;
+    if (gameState.bondExp >= gameState.bondMaxExp) {
+        gameState.bondExp -= gameState.bondMaxExp;
+        gameState.bondLevel++;
+        gameState.bondMaxExp = Math.floor(gameState.bondMaxExp * 1.3);
+        addLog(`🎉 羈絆等級提升！當前已達到 LV.${gameState.bondLevel}！`);
+    }
+}
+
+// ==================== 補給商店系統 ====================
+function openShop() {
+    document.getElementById('shop-screen').style.display = "block";
+    const container = document.getElementById('shop-items-list');
+    container.innerHTML = "";
+    
+    SHOP_ITEMS.forEach(item => {
+        const row = document.createElement('div');
+        row.className = "shop-item-row";
+        row.innerHTML = `
+            <div>
+                <span style="font-weight:bold; color:#fbd38d;">${item.name}</span>
+                <div style="font-size:10px; color:#a0aec0; margin-top:2px;">價格: 🪙 ${item.price}</div>
+            </div>
+            <button class="shop-buy-btn" onclick="buyShopItem('${item.id}')">購買</button>
+        `;
+        container.appendChild(row);
+    });
+}
+
+function closeShop() { document.getElementById('shop-screen').style.display = "none"; }
+
+function buyShopItem(itemId) {
+    const item = SHOP_ITEMS.find(i => i.id === itemId);
+    if (!item) return;
+    
+    if (gameState.gold < item.price) {
+        addLog("⚠️ 金幣不足，商店老闆對你翻了個白眼！", true);
+        return;
+    }
+    
+    gameState.gold -= item.price;
+    
+    if (item.type === 'potion') {
+        gameState.potions[item.target]++;
+        addLog(`🛒 購買成功：獲得了 ${item.name}*1。`);
+    } else if (item.type === 'box') {
+        const newEquip = generateRandomEquipment(item.tier);
+        gameState.bag.push(newEquip);
+        addLog(`🎁 開箱奇蹟！獲得了超酷裝備：${newEquip.name}，已放入背包。`);
+    }
+    
+    updateUI();
+    openShop(); 
+}
+
+// ==================== 冒險秘境與自動無限戰鬥核心 ====================
+function openQuestSelect() {
+    document.getElementById('quest-select-screen').style.display = "block";
+    const container = document.getElementById('quest-list-container');
+    container.innerHTML = "";
+    
+    QUESTS.forEach(q => {
+        const row = document.createElement('div');
+        row.className = "quest-item-row";
+        row.innerHTML = `
+            <div>
+                <div style="font-weight:bold; color:#90cdf4;">【Lv.${q.level}】${q.name}</div>
+                <div style="font-size:10px; color:#cbd5e0; margin-top:3px;">敵生命: ${q.hp} | 敵攻擊: ${q.atk} | 基礎金幣: ${q.gold}</div>
+            </div>
+            <button class="quest-go-btn" onclick="startAdventure(${q.id})">出擊</button>
+        `;
+        container.appendChild(row);
+    });
+}
+
+function closeQuestSelect() { document.getElementById('quest-select-screen').style.display = "none"; }
+
+function startAdventure(questId) {
+    closeQuestSelect();
+    const q = QUESTS.find(item => item.id === questId);
+    if (!q) return;
+    
+    battleState.active = true;
+    battleState.quest = q;
+    
+    let bonusHp = (gameState.equipped.cat_armor ? gameState.equipped.cat_armor.value : 0) + 
+                  (gameState.equipped.dragon_armor ? gameState.equipped.dragon_armor.value : 0);
+    
+    battleState.playerMaxHp = 100 + bonusHp;
+    battleState.playerHp = battleState.playerMaxHp;
+    
+    document.getElementById('adventure-screen').style.display = "flex";
+    document.getElementById('adventure-title-text').innerText = `正在探索：${q.name}`;
+    
+    generateNextEnemy();
+    
+    const bLog = document.getElementById('battle-log');
+    bLog.innerHTML = `<div style="color:#ecc94b;">⚔️ 成功突入秘境【${q.name}】！龍貓軍團作戰準備。</div>`;
+    
+    if (battleState.autoTimer) clearInterval(battleState.autoTimer);
+    battleState.autoTimer = setInterval(autoBattleTick, 700);
+}
+
+function generateNextEnemy() {
+    if(!battleState.active) return;
+    
+    const q = battleState.quest;
+    const prefix = ENEMY_PREFIX[Math.floor(Math.random() * ENEMY_PREFIX.length)];
+    const suffix = ENEMY_SUFFIX[Math.floor(Math.random() * ENEMY_SUFFIX.length)];
+    
+    battleState.enemyName = prefix + suffix;
+    const wave = 0.9 + Math.random() * 0.3;
+    battleState.enemyMaxHp = Math.floor(q.hp * wave);
+    battleState.enemyHp = battleState.enemyMaxHp;
+    battleState.enemyAtk = Math.floor(q.atk * wave);
+    battleState.enemyGold = Math.floor(q.gold * wave);
+    
+    document.getElementById('enemy-name').innerText = `👹 ${battleState.enemyName}`;
+    updateBattleHpUI();
+    
+    const colors = ["#2c5282", "#4a47a3", "#7b3c3c", "#2d3748"];
+    document.getElementById('battle-stage').style.background = colors[Math.floor(Math.random()*colors.length)];
+}
+
+function updateBattleHpUI() {
+    const pPct = Math.max(0, (battleState.playerHp / battleState.playerMaxHp) * 100);
+    document.getElementById('player-hp').style.width = `${pPct}%`;
+    document.getElementById('player-hp-txt').innerText = `${battleState.playerHp} / ${battleState.playerMaxHp}`;
+    
+    const ePct = Math.max(0, (battleState.enemyHp / battleState.enemyMaxHp) * 100);
+    document.getElementById('enemy-hp').style.width = `${ePct}%`;
+    document.getElementById('enemy-hp-txt').innerText = `${battleState.enemyHp} / ${battleState.enemyMaxHp}`;
+}
+
+function autoBattleTick() {
+    if (!battleState.active) return;
+    
+    if (document.getElementById('chk-fast-defense').checked) {
+        playerAttackCombo();
+    }
+}
+
+function playerAttackCombo() {
+    if (!battleState.active || battleState.enemyHp <= 0) return;
+    
+    const btn = document.getElementById('btn-combo');
+    btn.disabled = true;
+    setTimeout(() => { btn.disabled = false; }, 200);
+    
+    let bonusAtk = (gameState.equipped.cat_weapon ? gameState.equipped.cat_weapon.value : 0) + 
+                   (gameState.equipped.dragon_weapon ? gameState.equipped.dragon_weapon.value : 0);
+    let totalAtk = 12 + bonusAtk + Math.floor(Math.random() * 6);
+    
+    let isCrit = Math.random() < (0.1 + gameState.bondLevel * 0.01);
+    if(isCrit) {
+        totalAtk = Math.floor(totalAtk * 1.6);
+    }
+    
+    battleState.enemyHp = Math.max(0, battleState.enemyHp - totalAtk);
+    
+    triggerBattleAnimation();
+    
+    let logStr = isCrit ? `🔥【爆擊!!】` : `🐾 `;
+    logStr += `龍貓聯軍打出合體技，對 [${battleState.enemyName}] 造成 <span style="color:#fc8181; font-weight:bold;">${totalAtk}</span> 點傷害！`;
+    addBattleLog(logStr);
+    
+    updateBattleHpUI();
+    
+    if (battleState.enemyHp <= 0) {
+        handleEnemyDefeat();
+        return;
+    }
+    
+    setTimeout(enemyCounterAttack, 250);
+}
+
+function enemyCounterAttack() {
+    if (!battleState.active || battleState.enemyHp <= 0) return;
+    
+    let dmg = Math.max(1, Math.floor(battleState.enemyAtk + (Math.random() * 4 - 2)));
+    
+    if (battleState.playerHp <= dmg) {
+        if (gameState.potions.large > 0) {
+            gameState.potions.large--;
+            battleState.playerHp = Math.min(battleState.playerMaxHp, battleState.playerHp + 60);
+            addBattleLog(`🧪 自動緊急觸發：消耗【大傷藥】挽救局勢，回復 60 點生命值！`);
+            updateUI();
+        } else if (gameState.potions.small > 0) {
+            gameState.potions.small--;
+            battleState.playerHp = Math.min(battleState.playerMaxHp, battleState.playerHp + 25);
+            addBattleLog(`💊 自動緊急觸發：消耗【小傷藥】挽救局勢，回復 25 點生命值！`);
+            updateUI();
+        }
+    }
+    
+    battleState.playerHp = Math.max(0, battleState.playerHp - dmg);
+    addBattleLog(`💥 敵方 [${battleState.enemyName}] 發動反撲，對龍貓聯軍造成了 <span style="color:#cbd5e0;">${dmg}</span> 點傷害。`);
+    updateBattleHpUI();
+    
+    if (battleState.playerHp <= 0) {
+        addBattleLog(`<span style="color:#fc8181; font-weight:bold;">💀 龍貓聯軍體力不支，被迫撤退回島，損失了一些戰利品...</span>`);
+        setTimeout(() => { exitBattle(true); }, 1500);
+    }
+}
+
+function handleEnemyDefeat() {
+    gameState.gold += battleState.enemyGold;
+    gainBond(4);
+    
+    let rewardStr = `🏆 成功擊敗了 [${battleState.enemyName}]！獲得 🪙 ${battleState.enemyGold} 金幣！`;
+    
+    if (Math.random() < 0.55) {
+        const dropItem = generateRandomEquipment(0);
+        gameState.bag.push(dropItem);
+        rewardStr += ` 並且獲得戰利品：<span class="rarity-${dropItem.rarity}">${dropItem.name}</span> (已自動塞進無限背包)`;
+    }
+    
+    addBattleLog(`<span style="color:#68d391; font-weight:bold;">${rewardStr}</span>`);
+    updateUI();
+    
+    const loopEnabled = document.getElementById('chk-auto-loop').checked;
+    if (loopEnabled) {
+        addBattleLog(`🔄 自動下一場已勾選，正在前進秘境更深處尋找新獵物...`);
+        setTimeout(() => {
+            generateNextEnemy();
+        }, 800);
+    } else {
+        addBattleLog(`🏁 自動循環結束。將在 1.5 秒後返回溫暖的浮空島。`);
+        setTimeout(() => { exitBattle(false); }, 1500);
+    }
+}
+
+function exitBattle(isDefeated = false) {
+    battleState.active = false;
+    if (battleState.autoTimer) clearInterval(battleState.autoTimer);
+    
+    document.getElementById('adventure-screen').style.display = "none";
+    
+    if (isDefeated) {
+        const loss = Math.floor(gameState.gold * 0.1);
+        gameState.gold -= loss;
+        addLog(`😭 戰敗歸來... Barnaby 馱獸大哭一場，金幣灑落損失了 💰 ${loss} 個。`, true);
+    } else {
+        addLog(`🎒 探險凱旋而歸！快去檢查控制面板裡的戰利品吧！`);
+    }
+    
+    updateUI();
+}
+
+function triggerBattleAnimation() {
+    const f = document.getElementById('effect-fire');
+    const c = document.getElementById('effect-claw');
+    
+    f.style.width = "300px"; f.style.opacity = 0.8;
+    c.style.opacity = 0.9;
+    
+    setTimeout(() => {
+        f.style.width = "0px"; f.style.opacity = 0;
+        c.style.opacity = 0;
+    }, 150);
+}
+
+function addLog(msg, isAlert = false) {
+    const screen = document.getElementById('log-screen');
+    const entry = document.createElement('div');
+    entry.className = isAlert ? "log-entry log-alert" : "log-entry";
+    
+    const now = new Date();
+    const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+    
+    entry.innerHTML = `[${timeStr}] ${msg}`;
+    screen.appendChild(entry);
+    screen.scrollTop = screen.scrollHeight;
+}
+
+function addBattleLog(msg) {
+    const bLog = document.getElementById('battle-log');
+    const div = document.createElement('div');
+    div.style.marginBottom = "4px";
+    div.innerHTML = msg;
+    bLog.appendChild(div);
+    bLog.scrollTop = bLog.scrollHeight;
+}
+</script>
+</body>
+</html>
